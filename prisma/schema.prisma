@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int         @id @default(autoincrement())
+  uname          String      @unique
+  email          String      @unique
+  pass           String
+  fname          String
+  lname          String
+  email_verified String?
+  otp            Decimal?
+  otp_expiry     DateTime?
+  last_login     DateTime    @default(now()) @updatedAt
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @default(now()) @updatedAt
+  Locker         Locker[]
+  Wallet         Wallet[]
+  Addresses      Addresses[]
+}
+
+model Locker {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  User       User     @relation(fields: [user_id], references: [id], onDelete: NoAction)
+}
+
+model Wallet {
+  wallet_id        Int      @id @default(autoincrement())
+  user_id          Int
+  description      String
+  transaction_type String
+  amount           Decimal
+  balance          Decimal
+  transaction_date DateTime @default(now()) @updatedAt
+  User             User     @relation(fields: [user_id], references: [id], onDelete: NoAction)
+}
+
+model Addresses {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  address_line String
+  city         String
+  state        String
+  country      String
+  postal_code  String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now()) @updatedAt
+  User         User     @relation(fields: [user_id], references: [id], onDelete: NoAction)
+}
