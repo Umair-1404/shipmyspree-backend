@@ -4,14 +4,21 @@ import jwt from "jsonwebtoken";
 import router from "./routes/api.js";
 import "dotenv/config";
 import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
 const PORT = 8080;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(bodyParser.json());
+app.use(cookieParser());
 
 app.get("/", (req, res) => {
   res.status(200).json({ msg: "Everything is ok" });

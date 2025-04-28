@@ -12,6 +12,10 @@ export const registerSchema = z.object({
     .regex(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
       message: "Email is not valid",
     }),
+  phone_no: z
+    .string({ message: "Phone No. is required" })
+    .min(6, { message: "Phone No. must be at least 6 characters long" })
+    .max(12, { message: "Phone No. must be at most 12 characters long" }),
   pass: z
     .string({ message: "Password is required" })
     .min(6, { message: "Password must be at least 6 characters long" })
@@ -32,8 +36,8 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z
     .string({ message: "Email field required" })
-    .min(3, { message: "Email must be at least 3 characters long" }),
+    .min(1, "Email field is required"),
   pass: z
     .string({ message: "Password field required" })
-    .min(6, { message: "Password must be at least 6 characters long" }),
+    .min(1, "Password field is required"),
 });

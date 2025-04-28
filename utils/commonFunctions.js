@@ -5,10 +5,3 @@ export const formatErrors = (error) => {
   });
   return errors;
 };
-
-export const sanitize = (value) => {
-  if (typeof value === "string") {
-    return value.trim() || null;
-  }
-  return null;
-};

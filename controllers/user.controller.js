@@ -1,7 +1,7 @@
 import { loginSchema, registerSchema } from "../schemas/user.schema.js";
 import bcrypt from "bcrypt";
 import { ZodError } from "zod";
-import { formatErrors, sanitize } from "../utils/commonFunctions.js";
+import { formatErrors } from "../utils/commonFunctions.js";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import "dotenv/config";
@@ -133,6 +133,15 @@ class userController {
       if (existingEmail) {
         return res.status(400).json({ msg: "Email is already taken" });
       }
+      const existingNum = await prisma.user.findFirst({
+        where: { phone_no: payload.phone_no },
+      });
+
+      console.log("existingNum----", existingNum);
+
+      if (existingNum) {
+        return res.status(400).json({ msg: "Number is already taken" });
+      }
 
       const salt = bcrypt.genSaltSync(10);
       payload.pass = bcrypt.hashSync(payload.pass, salt);
@@ -147,6 +156,32 @@ class userController {
       });
     } catch (error) {
       const errors = error instanceof ZodError ? formatErrors(error) : error;
+      return res.status(500).json({ msg: errors });
+    }
+  }
+
+  static async fetchUser(req, res) {
+    try {
+      const token = req.headers.authorization.split(" ")[1];
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      console.log("Payload------", payload);
+      let findUser = await prisma.user.findUnique({
+        where: {
+          email: payload.email,
+        },
+      });
+      if (!findUser)
+        return res.status(404).json({ msg: "User does not exist" });
+
+      console.log("Find User------", findUser);
+
+      return res.status(200).json({
+        msg: "User found",
+        findUser,
+      });
+    } catch (error) {
+      const errors = error instanceof ZodError ? formatErrors(error) : error;
+      console.error("Error during login:", errors);
       return res.status(500).json({ msg: errors });
     }
   }
@@ -250,14 +285,14 @@ class userController {
     try {
       const body = req.body;
       const payload = loginSchema.parse(body);
-
+      let isAuthenticated = false;
       console.log("Payload------", payload);
       let findUser = await prisma.user.findUnique({
         where: {
           email: payload.email,
         },
       });
-      console.log("Sanitized-----", findUser);
+
       if (!findUser)
         return res.status(404).json({ msg: "User does not exist" });
 
@@ -274,6 +309,34 @@ class userController {
 
         const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
           expiresIn: "1h",
+        });
+        if (findUser) {
+          isAuthenticated = true;
+        }
+        await prisma.user.update({
+          where: {
+            email: payload.email,
+          },
+          data: { last_login: new Date() },
+        });
+
+        res.cookie("authToken", token, {
+          httpOnly: true,
+          sameSite: "strict",
+          maxAge: 3600 * 1000,
+        });
+
+        res.cookie("refreshToken", token, {
+          httpOnly: true,
+          sameSite: "strict",
+          maxAge: 5400 * 1000,
+        });
+
+        res.cookie("auth", isAuthenticated, {
+          httpOnly: false,
+          sameSite: "lax",
+          secure: false,
+          maxAge: 3600 * 1000,
         });
 
         return res.status(200).json({

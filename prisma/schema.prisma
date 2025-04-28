@@ -14,40 +14,56 @@ datasource db {
 }
 
 model User {
-  id             Int         @id @default(autoincrement())
-  uname          String      @unique
-  email          String      @unique
+  id             Int       @id @default(autoincrement())
+  uname          String    @unique
+  email          String    @unique
   pass           String
   fname          String
   lname          String
+  phone_no       String
   email_verified String?
   otp            Decimal?
   otp_expiry     DateTime?
-  last_login     DateTime    @default(now()) @updatedAt
-  created_at     DateTime    @default(now())
-  updated_at     DateTime    @default(now()) @updatedAt
-  Locker         Locker[]
-  Wallet         Wallet[]
-  Addresses      Addresses[]
+  last_login     DateTime  @default(now())
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @default(now()) @updatedAt
+
+  Locker    Locker?
+  Wallet    Wallet?
+  Addresses Addresses[]
+  Order     Order[]
 }
 
 model Locker {
   id         Int      @id @default(autoincrement())
-  user_id    Int
+  user_id    Int      @unique
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @updatedAt
-  User       User     @relation(fields: [user_id], references: [id], onDelete: NoAction)
+
+  User User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }
 
 model Wallet {
-  wallet_id        Int      @id @default(autoincrement())
-  user_id          Int
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  balance    Decimal
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+
+  User         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Transactions Transaction[]
+}
+
+model Transaction {
+  id               Int      @id @default(autoincrement())
+  wallet_id        Int
   description      String
   transaction_type String
   amount           Decimal
-  balance          Decimal
-  transaction_date DateTime @default(now()) @updatedAt
-  User             User     @relation(fields: [user_id], references: [id], onDelete: NoAction)
+  payment_mode     String
+  transaction_date DateTime @default(now())
+
+  Wallet Wallet @relation(fields: [wallet_id], references: [id], onDelete: Cascade)
 }
 
 model Addresses {
@@ -57,8 +73,72 @@ model Addresses {
   city         String
   state        String
   country      String
-  postal_code  String?
+  mobile_no    String
+  postal_code  String
   created_at   DateTime @default(now())
   updated_at   DateTime @default(now()) @updatedAt
-  User         User     @relation(fields: [user_id], references: [id], onDelete: NoAction)
+
+  User     User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  Shipping Shipping[]
+}
+
+model Order {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  status          String
+  processing_cost Decimal?
+  shipping_cost   Decimal
+  total_amount    Decimal
+  type            String
+  payment_status  String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  User      User       @relation(fields: [user_id], references: [id])
+  Products  Product[]
+  Shippings Shipping[]
+}
+
+model Product {
+  id               Int      @id @default(autoincrement())
+  order_id         Int
+  url              String
+  tracking_no      String?
+  name             String
+  category         String
+  sub_category     String
+  price            Decimal
+  dimension        String?
+  color            String
+  quantity         Int
+  on_missing       String
+  price_increase   String
+  whatsapp_number  String
+  total_weight     Decimal?
+  is_missing       Boolean  @default(false)
+  actual_dimension String?
+  actual_weight    Decimal?
+  remarks          String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  Order    Order     @relation(fields: [order_id], references: [id])
+  Shipping Shipping?
+}
+
+model Shipping {
+  id                 Int      @id @default(autoincrement())
+  order_id           Int
+  product_id         Int      @unique
+  status             String
+  tracking_no        String
+  carrier            String
+  address_id         Int
+  estimated_delivery DateTime
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  Order   Order     @relation(fields: [order_id], references: [id])
+  Product Product   @relation(fields: [product_id], references: [id])
+  Address Addresses @relation(fields: [address_id], references: [id])
 }
